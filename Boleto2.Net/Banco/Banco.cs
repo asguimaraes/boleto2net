@@ -98,6 +98,8 @@ namespace Boleto2Net
                 _banco.ValidaBoleto(boleto);
                 // Formata nosso número (Classe Abstrata)
                 FormataNossoNumero(boleto);
+                // Formata cedente (Classe Abstrata)
+                FormataCedente();
                 // Formata o código de Barras (Classe Abstrata)
                 FormataCodigoBarra(boleto);
                 // Formata linha digitavel (Classe Abstrata)
