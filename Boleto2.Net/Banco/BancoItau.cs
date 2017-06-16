@@ -129,12 +129,81 @@ namespace Boleto2Net
 
         public void LerDetalheRetornoCNAB240SegmentoT(ref Boleto boleto, string registro)
         {
-            throw new NotImplementedException();
+            try
+            {
+                /*
+                 * Não existe propriedade para identificar se o boleto é DDA (Débito Direto Automático)
+                 * Não existe propriedade para identificar os erros para rejeição dos registros
+                 * Não existe propriedade para identificar o meio pelo qual o título foi liquidado 
+                 */
+
+                //Identificação da ocorrência
+                boleto.CodigoOcorrencia = registro.Substring(15, 2);
+                boleto.DescricaoOcorrencia = DescricaoOcorrenciaCnab400(boleto.CodigoOcorrencia);
+
+                //Conta Bancária
+                boleto.Banco.Cedente = new Cedente();
+                boleto.Banco.Cedente.ContaBancaria = new ContaBancaria();
+                boleto.Banco.Cedente.ContaBancaria.Agencia = registro.Substring(18, 4);
+                boleto.Banco.Cedente.ContaBancaria.Conta = registro.Substring(30, 5);
+                boleto.Banco.Cedente.ContaBancaria.DigitoConta = registro.Substring(36, 1);
+                boleto.Banco.Cedente.ContaBancaria.Carteira = registro.Substring(37, 3);
+                boleto.Banco.Cedente.ContaBancaria.TipoCarteira = TipoCarteira.CarteiraCobrancaSimples;
+
+                //Identificação da Ocorrência
+                boleto.NossoNumero = registro.Substring(40, 8);
+                boleto.NossoNumeroDV = registro.Substring(48, 1);
+                boleto.NossoNumeroFormatado = $"{boleto.Banco.Cedente.ContaBancaria.Carteira}/{boleto.NossoNumero}-{boleto.NossoNumeroDV}";
+
+                //Número do Documento
+                boleto.NumeroDocumento = registro.Substring(58, 10);
+
+                //Data Vencimento do Título
+                boleto.DataVencimento = Utils.ToDateTime(Utils.ToInt32(registro.Substring(73, 8)).ToString("####-##-##"));
+
+                //Valor do título
+                boleto.ValorTitulo = Convert.ToDecimal(registro.Substring(81, 15)) / 100;
+
+                //Nº Controle do Participante
+                boleto.NumeroControleParticipante = registro.Substring(105, 25);
+                
+                //Sacado (Pagador)
+                boleto.Sacado.CPFCNPJ = (registro.Substring(132, 1) == "2") ? registro.Substring(134, 14) : registro.Substring(137, 11);
+                boleto.Sacado.Nome = registro.Substring(148, 30).TrimEnd();
+
+                //Valor tarifas
+                boleto.ValorTarifas = Convert.ToDecimal(registro.Substring(198, 15)) / 100;
+                                
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Erro ao ler segmento T do arquivo de RETORNO / CNAB 240.", ex);
+            }
         }
 
         public void LerDetalheRetornoCNAB240SegmentoU(ref Boleto boleto, string registro)
         {
-            throw new NotImplementedException();
+            try
+            {
+                //Valor de juros de mora/multa
+                boleto.ValorJurosDia = Convert.ToDecimal(registro.Substring(17, 15)) / 100;
+                //Valor do desconto
+                boleto.ValorDesconto = Convert.ToDecimal(registro.Substring(32, 15)) / 100;
+                //Valor abatimento
+                boleto.ValorAbatimento = Convert.ToDecimal(registro.Substring(47, 15)) / 100;
+                //Valor IOF
+                boleto.ValorIOF = Convert.ToDecimal(registro.Substring(62, 15)) / 100;
+                //Valor lançado em conta corrente
+                boleto.ValorPago = Convert.ToDecimal(registro.Substring(77, 15)) / 100;
+
+                //Data do Crédito
+                boleto.DataCredito = Utils.ToDateTime(Utils.ToInt32(registro.Substring(145, 8)).ToString("####-##-##"));
+                
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Erro ao ler segmento U do arquivo de RETORNO / CNAB 240.", ex);
+            }
         }
 
         public void LerHeaderRetornoCNAB400(string registro)

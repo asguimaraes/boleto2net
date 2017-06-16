@@ -509,6 +509,9 @@ namespace Boleto2Net
         {
             try
             {
+                boleto.Banco.Cedente = new Cedente();
+                boleto.Banco.Cedente.ContaBancaria = new ContaBancaria();
+
                 //Nº Controle do Participante
                 boleto.NumeroControleParticipante = registro.Substring(105, 25);
 
