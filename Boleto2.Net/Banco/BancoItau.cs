@@ -147,13 +147,15 @@ namespace Boleto2Net
                 boleto.Banco.Cedente.ContaBancaria.Agencia = registro.Substring(18, 4);
                 boleto.Banco.Cedente.ContaBancaria.Conta = registro.Substring(30, 5);
                 boleto.Banco.Cedente.ContaBancaria.DigitoConta = registro.Substring(36, 1);
-                boleto.Banco.Cedente.ContaBancaria.Carteira = registro.Substring(37, 3);
-                boleto.Banco.Cedente.ContaBancaria.TipoCarteira = TipoCarteira.CarteiraCobrancaSimples;
+
+                //Carteira
+                boleto.Carteira = registro.Substring(37, 3);
+                boleto.TipoCarteira = TipoCarteira.CarteiraCobrancaSimples;
 
                 //Identificação da Ocorrência
                 boleto.NossoNumero = registro.Substring(40, 8);
                 boleto.NossoNumeroDV = registro.Substring(48, 1);
-                boleto.NossoNumeroFormatado = $"{boleto.Banco.Cedente.ContaBancaria.Carteira}/{boleto.NossoNumero}-{boleto.NossoNumeroDV}";
+                boleto.NossoNumeroFormatado = $"{boleto.Carteira}/{boleto.NossoNumero}-{boleto.NossoNumeroDV}";
 
                 //Número do Documento
                 boleto.NumeroDocumento = registro.Substring(58, 10);
