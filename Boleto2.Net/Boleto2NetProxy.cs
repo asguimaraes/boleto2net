@@ -42,8 +42,11 @@ namespace Boleto2Net
         //             As propriedades que já existiam na classe ContaCorrente, foram renomeadas para CarteiraPadrao, VariacaoCarteiraPadrao, TipoCarteiraPadrao
         //             A classe Boleto passou a ter um construtor obrigatorio, onde recebe um objeto Banco, e já prepara as 3 propriedades com o padrão definido.
         //             Alteração foi necessária pois existem retornos com boletos em diferentes carteiras, e do modo que estava, aceitava apenas uma carteira para toda a lista de boletos.
+        // Julho/2017
+        //      1.41 - Banco do Brasil - Carteira 17 Variação 027
+        //      1.42 - Banco do Brasil - Correção BB - Ficha de Compensação - AGÊNCIA/CÓDIGO DO BENEFICIÁRIO: Informe o prefixo da agência e número da conta de relacionamento com o BB no formato AAAA-Z / CCCCC-Z
 
-        readonly public string Versao = "1.40c";
+        readonly public string Versao = "1.42";
 
         private Boletos boletos = new Boletos();
         public int quantidadeBoletos { get { return boletos.Count; } }
@@ -115,40 +118,38 @@ namespace Boleto2Net
                 }
 
                 // Banco, Cedente, Conta Corrente
-                boletos.Banco = new Banco(numeroBanco)
+                boletos.Banco = Banco.NovaInstancia(numeroBanco);
+                boletos.Banco.Cedente = new Cedente
                 {
-                    Cedente = new Cedente
+                    CPFCNPJ = cnpj,
+                    Nome = razaoSocial,
+                    Observacoes = observacoes,
+                    ContaBancaria = new ContaBancaria
                     {
-                        CPFCNPJ = cnpj,
-                        Nome = razaoSocial,
-                        Observacoes = observacoes,
-                        ContaBancaria = new ContaBancaria
-                        {
-                            Agencia = agencia,
-                            DigitoAgencia = digitoAgencia,
-                            OperacaoConta = operacaoConta,
-                            Conta = conta,
-                            DigitoConta = digitoConta,
-                            CarteiraPadrao = carteira,
-                            VariacaoCarteiraPadrao = variacaoCarteira,
-                            TipoCarteiraPadrao = (TipoCarteira)tipoCarteira,
-                            TipoFormaCadastramento = (TipoFormaCadastramento)tipoFormaCadastramento,
-                            TipoImpressaoBoleto = (TipoImpressaoBoleto)tipoImpressaoBoleto,
-                            TipoDocumento = (TipoDocumento)tipoDocumento
-                        },
-                        Codigo = codigoCedente,
-                        CodigoDV = digitoCodigoCedente,
-                        CodigoTransmissao = codigoTransmissao,
-                        Endereco = new Endereco
-                        {
-                            LogradouroEndereco = enderecoLogradouro,
-                            LogradouroNumero = enderecoNumero,
-                            LogradouroComplemento = enderecoComplemento,
-                            Bairro = enderecoBairro,
-                            Cidade = enderecoCidade,
-                            UF = enderecoEstado,
-                            CEP = enderecoCep
-                        }
+                        Agencia = agencia,
+                        DigitoAgencia = digitoAgencia,
+                        OperacaoConta = operacaoConta,
+                        Conta = conta,
+                        DigitoConta = digitoConta,
+                        CarteiraPadrao = carteira,
+                        VariacaoCarteiraPadrao = variacaoCarteira,
+                        TipoCarteiraPadrao = (TipoCarteira)tipoCarteira,
+                        TipoFormaCadastramento = (TipoFormaCadastramento)tipoFormaCadastramento,
+                        TipoImpressaoBoleto = (TipoImpressaoBoleto)tipoImpressaoBoleto,
+                        TipoDocumento = (TipoDocumento)tipoDocumento
+                    },
+                    Codigo = codigoCedente,
+                    CodigoDV = digitoCodigoCedente,
+                    CodigoTransmissao = codigoTransmissao,
+                    Endereco = new Endereco
+                    {
+                        LogradouroEndereco = enderecoLogradouro,
+                        LogradouroNumero = enderecoNumero,
+                        LogradouroComplemento = enderecoComplemento,
+                        Bairro = enderecoBairro,
+                        Cidade = enderecoCidade,
+                        UF = enderecoEstado,
+                        CEP = enderecoCep
                     }
                 };
                 boletos.Banco.FormataCedente();

@@ -1,0 +1,36 @@
+version: 2.1.0.{build}
+environment:
+   matrix:
+       - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+   COVERALLS_REPO_TOKEN:
+        secure: n1GGF5LOUx3ITCBy3FhfRJOhJBej9rUa9PeR8QDNeJRKPmVQf8TOId3jEzkyuahj
+
+configuration: Release
+
+before_build:
+  - nuget restore
+  
+after_build:
+  - ps: >-
+      . .\build.ps1 Pack-Nuget
+artifacts:
+  - path: '**\boleto*.nupkg'
+    name: nuget
+
+deploy:
+- provider: NuGet
+  server: https://www.myget.org/F/boleto2netbuild/
+  api_key:
+    secure: rH9VFKFXJsR5D07BF9PayFm7mRo7acVANtfgYkGa3S9ybX0RCWBiSM153yhLaorG
+  skip_symbols: true
+  on:
+    branch: master
+    
+notifications:
+- provider: Email
+  to:
+  - cds@cds-software.com.br
+  subject: Boleto2Net Build
+  on_build_success: false
+  on_build_failure: true
+  on_build_status_changed: true

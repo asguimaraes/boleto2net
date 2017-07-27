@@ -3,19 +3,19 @@ using static System.String;
 
 namespace Boleto2Net
 {
-    [CarteiraCodigo("17/019")]
-    internal class BancoBrasilCarteira17_019 : ICarteira<BancoBrasil>
+    [CarteiraCodigo("17/019", "17/027")]
+    internal class BancoBrasilCarteira17 : ICarteira<BancoBrasil>
     {
-        internal static Lazy<ICarteira<BancoBrasil>> Instance { get; } = new Lazy<ICarteira<BancoBrasil>>(() => new BancoBrasilCarteira17_019());
+        internal static Lazy<ICarteira<BancoBrasil>> Instance { get; } = new Lazy<ICarteira<BancoBrasil>>(() => new BancoBrasilCarteira17());
 
-        private BancoBrasilCarteira17_019()
+        private BancoBrasilCarteira17()
         {
 
         }
 
         public void FormataNossoNumero(Boleto boleto)
         {
-            // Carteira 17 - Variação 019: Cliente emite o boleto
+            // Carteira 17 - Variação 019/027: Cliente emite o boleto
             // O nosso número não pode ser em branco.
             if (IsNullOrWhiteSpace(boleto.NossoNumero))
                 throw new Exception("Nosso Número não informado.");
