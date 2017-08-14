@@ -488,20 +488,20 @@ namespace Boleto2Net
         {
             switch (codigoEspecie)
             {
-                case "01":
-                    return TipoEspecieDocumento.DM;
-                case "02":
-                    return TipoEspecieDocumento.NP;
-                case "03":
-                    return TipoEspecieDocumento.NS;
-                case "05":
-                    return TipoEspecieDocumento.RC;
-                case "10":
-                    return TipoEspecieDocumento.LC;
-                case "11":
-                    return TipoEspecieDocumento.ND;
-                case "12":
-                    return TipoEspecieDocumento.DS;
+                case "01":                    
+                    return TipoEspecieDocumento.DM; //Ok
+                case "02":                    
+                    return TipoEspecieDocumento.NP; //Ok
+                case "03":                    
+                    return TipoEspecieDocumento.NS; //Ok
+                case "05":                    
+                    return TipoEspecieDocumento.RC; //Ok
+                case "09":                    
+                    return TipoEspecieDocumento.LC; //09 de acordo com a documentação do Itaú
+                case "13":                    
+                    return TipoEspecieDocumento.ND; //13 de acordo com a documentação do Itaú
+                case "08":                    
+                    return TipoEspecieDocumento.DS ;//08 de acordo com a documentação do Itaú
                 default:
                     return TipoEspecieDocumento.OU;
             }
@@ -512,19 +512,19 @@ namespace Boleto2Net
             switch (especieDocumento)
             {
                 case TipoEspecieDocumento.DM:
-                    return "01";
+                    return "01"; //Ok
                 case TipoEspecieDocumento.NP:
-                    return "02";
+                    return "02"; //Ok
                 case TipoEspecieDocumento.NS:
-                    return "03";
+                    return "03"; //Ok
                 case TipoEspecieDocumento.RC:
-                    return "05";
+                    return "05"; //Ok
                 case TipoEspecieDocumento.LC:
-                    return "10";
+                    return "09"; //09 de acordo com a documentação do Itaú 
                 case TipoEspecieDocumento.ND:
-                    return "11";
+                    return "13"; //13 de acordo com a documentação do Itaú
                 case TipoEspecieDocumento.DS:
-                    return "12";
+                    return "08"; //08 de acordo com a documentação do Itáu
                 default:
                     return "99";
             }
