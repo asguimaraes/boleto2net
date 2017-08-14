@@ -5,7 +5,7 @@ namespace Boleto2Net.Testes
 {
     public class BancoBrasilCarteira17019Tests
     {
-        readonly Banco _banco;
+        readonly IBanco _banco;
         public BancoBrasilCarteira17019Tests()
         {
             var contaBancaria = new ContaBancaria
@@ -20,7 +20,7 @@ namespace Boleto2Net.Testes
                 TipoFormaCadastramento = TipoFormaCadastramento.ComRegistro,
                 TipoImpressaoBoleto = TipoImpressaoBoleto.Empresa
             };
-            _banco = Banco.NovaInstancia(001);
+            _banco = Banco.Instancia(Bancos.BancoDoBrasil);
             _banco.Cedente = Utils.GerarCedente("1234567", "", "", contaBancaria);
             _banco.FormataCedente();
         }

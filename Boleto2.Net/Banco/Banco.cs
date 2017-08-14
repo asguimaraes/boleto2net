@@ -6,75 +6,23 @@ using Microsoft.VisualBasic;
 
 namespace Boleto2Net
 {
-    public abstract class Banco : IBanco
+    public static class Banco
     {
-        static public Banco NovaInstancia(int codigo)
+        private static readonly Dictionary<int, Lazy<IBanco>> Bancos = new Dictionary<int, Lazy<IBanco>>
         {
-            switch (codigo)
-            {
-                case 001: return new BancoBrasil();
-                case 033: return new BancoSantander();
-                case 104: return new BancoCaixa();
-                case 237: return new BancoBradesco();
-                case 341: return new BancoItau();
-                case 756: return new BancoSicoob();
-                default: throw Boleto2NetException.BancoNaoImplementado(codigo);
-            }
-        }
+            [001] = BancoBrasil.Instance,
+            [033] = BancoSantander.Instance,
+            [104] = BancoCaixa.Instance,
+            [237] = BancoBradesco.Instance,
+            [341] = BancoItau.Instance,
+            [756] = BancoSicoob.Instance
+        };
 
-        public int          Codigo                           { get; protected set; }
-        public string       Digito                           { get; protected set; }
-        public string       Nome                             { get; protected set; }
-        public bool         RemoveAcentosArquivoRemessa      { get; protected set; }
-        public List<string> IdsRetornoCnab400RegistroDetalhe { get;                } = new List<string>();
+        public static IBanco Instancia(int codigoBanco)
+            => (Bancos.ContainsKey(codigoBanco) ? Bancos[codigoBanco] : throw Boleto2NetException.BancoNaoImplementado(codigoBanco)).Value;
 
-        public Cedente      Cedente                          { get; set; }
-
-        public Boleto NovoBoleto()
-        {
-            var boleto = new Boleto(this);
-            return boleto;
-        }
-        internal abstract ICarteira ObterCarteira(Boleto boleto);
-
-        public abstract void FormataCedente();
-
-        public string FormataCodigoBarraCampoLivre(Boleto boleto)
-        {
-            var carteira = ObterCarteira(boleto);
-            var campoLivre = carteira.FormataCodigoBarraCampoLivre(boleto);
-            if (campoLivre.Length != 25)
-                throw new Exception($"Campo Livre deve ter 25 posições: {campoLivre}");
-            return campoLivre;
-        }
-
-        public void FormataNossoNumero(Boleto boleto)
-        {
-            var carteira = ObterCarteira(boleto);
-            carteira.FormataNossoNumero(boleto);
-        }
-
-        /// <summary>
-        ///     Valida o boleto
-        /// </summary>
-        public void ValidaBoleto(Boleto boleto)
-        {
-            try
-            {
-                // Formata nosso número (Classe Abstrata)
-                FormataNossoNumero(boleto);
-                // Formata cedente (Classe Abstrata)
-                FormataCedente();
-                // Formata o código de Barras (Classe Abstrata)
-                FormataCodigoBarra(boleto);
-                // Formata linha digitavel (Classe Abstrata)
-                FormataLinhaDigitavel(boleto);
-            }
-            catch (Exception ex)
-            {
-                throw Boleto2NetException.ErroAoValidarBoleto(ex);
-            }
-        }
+        public static IBanco Instancia(Bancos codigoBanco)
+            => Instancia((int)codigoBanco);
 
         /// <summary>
         ///     Formata código de barras
@@ -86,10 +34,11 @@ namespace Boleto2Net
         ///     10 a 19 - 10 - Valor
         ///     20 a 44 – 25 - Campo Livre
         /// </summary>
-        public void FormataCodigoBarra(Boleto boleto)
+        public static void FormataCodigoBarra(Boleto boleto)
         {
+            var banco = boleto.Banco;
             var codigoBarra = boleto.CodigoBarra;
-            codigoBarra.CampoLivre = FormataCodigoBarraCampoLivre(boleto);
+            codigoBarra.CampoLivre = banco.FormataCodigoBarraCampoLivre(boleto);
             if (string.IsNullOrWhiteSpace(codigoBarra.CampoLivre))
             {
                 codigoBarra.CodigoBanco = string.Empty;
@@ -99,7 +48,7 @@ namespace Boleto2Net
             }
             else
             {
-                codigoBarra.CodigoBanco = Utils.FitStringLength(Codigo.ToString(), 3, 3, '0', 0, true, true, true);
+                codigoBarra.CodigoBanco = banco.Codigo.ToString().FitStringLength(3, '0');
                 codigoBarra.Moeda = boleto.CodigoMoeda;
                 codigoBarra.FatorVencimento = boleto.DataVencimento.FatorVencimento();
                 codigoBarra.ValorDocumento = boleto.ValorTitulo.ToString("N2").Replace(",", "").Replace(".", "").PadLeft(10, '0');
@@ -122,7 +71,7 @@ namespace Boleto2Net
         ///     Composto pelo fator de vencimento com 4(quatro) caracteres e o valor do documento com 10(dez) caracteres, sem
         ///     separadores e sem edição.
         /// </summary>
-        public void FormataLinhaDigitavel(Boleto boleto)
+        public static void FormataLinhaDigitavel(Boleto boleto)
         {
             var codigoBarra = boleto.CodigoBarra;
             if (string.IsNullOrWhiteSpace(codigoBarra.CampoLivre))
@@ -133,6 +82,7 @@ namespace Boleto2Net
             //BBBMC.CCCCD1 CCCCC.CCCCCD2 CCCCC.CCCCCD3 D4 FFFFVVVVVVVVVV
 
             var codigoDeBarras = codigoBarra.CodigoDeBarras;
+
             #region Campo 1
 
             // POSIÇÃO 1 A 3 DO CODIGO DE BARRAS
@@ -208,65 +158,5 @@ namespace Boleto2Net
             var digito = (10 - soma % 10) % 10;
             return digito;
         }
-
-        #region Gerar Arquivo Remessa
-
-        /// <summary>
-        ///     Gera os registros de header do aquivo de remessa
-        /// </summary>
-        public abstract string GerarHeaderRemessa(TipoArquivo tipoArquivo, int numeroArquivoRemessa, ref int numeroRegistroGeral);
-
-        /// <summary>
-        ///     Gera registros de detalhe do arquivo remessa
-        /// </summary>
-        public abstract string GerarDetalheRemessa(TipoArquivo tipoArquivo, Boleto boleto, ref int numeroRegistro);
-
-        /// <summary>
-        ///     Gera os registros de Trailer do arquivo de remessa
-        /// </summary>
-        public abstract string GerarTrailerRemessa(TipoArquivo tipoArquivo, int numeroArquivoRemessa,
-            ref int numeroRegistroGeral, decimal valorBoletoGeral,
-            int numeroRegistroCobrancaSimples, decimal valorCobrancaSimples,
-            int numeroRegistroCobrancaVinculada, decimal valorCobrancaVinculada,
-            int numeroRegistroCobrancaCaucionada, decimal valorCobrancaCaucionada,
-            int numeroRegistroCobrancaDescontada, decimal valorCobrancaDescontada);
-
-        public string GerarTrailerRemessaCNAB400(ref int numeroRegistroGeral)
-        {
-            numeroRegistroGeral++;
-            var reg = new TRegistroEDI();
-            reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0001, 001, 0, "9", ' ');                 //001-001
-            reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0002, 393, 0, string.Empty, ' ');        //002-393
-            reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0395, 006, 0, numeroRegistroGeral, '0'); //395-400
-            reg.CodificarLinha();
-            return reg.LinhaRegistro;
-        }
-        #endregion
-
-        #region Leitura do Arquivo Retorno
-
-        public abstract void LerDetalheRetornoCNAB240SegmentoT(ref Boleto boleto, string registro);
-
-        public abstract void LerDetalheRetornoCNAB240SegmentoU(ref Boleto boleto, string registro);
-
-        public virtual void LerHeaderRetornoCNAB400(string registro)
-        {
-            if (registro.Substring(0, 9) != "02RETORNO")
-            {
-                throw new Exception("O arquivo não é do tipo \"02RETORNO\"");
-            }
-        }
-
-        public abstract void LerDetalheRetornoCNAB400Segmento1(ref Boleto boleto, string registro);
-
-        public abstract void LerDetalheRetornoCNAB400Segmento7(ref Boleto boleto, string registro);
-
-        public virtual void LerTrailerRetornoCNAB400(string registro)
-        {
-            if (registro.Substring(0, 1) != "9")
-                throw new Exception("O Trailer do arquivo não começa com 9");
-        }
-
-        #endregion
     }
 }

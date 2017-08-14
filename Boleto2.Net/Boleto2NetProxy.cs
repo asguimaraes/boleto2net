@@ -1,7 +1,7 @@
 ﻿using System;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.IO;
 
 namespace Boleto2Net
 {
@@ -45,8 +45,12 @@ namespace Boleto2Net
         // Julho/2017
         //      1.41 - Banco do Brasil - Carteira 17 Variação 027
         //      1.42 - Banco do Brasil - Correção BB - Ficha de Compensação - AGÊNCIA/CÓDIGO DO BENEFICIÁRIO: Informe o prefixo da agência e número da conta de relacionamento com o BB no formato AAAA-Z / CCCCC-Z
+        // Agosto/2017
+        //      1.43 - Classe Boleto = Ajuste das propriedades ValorPago e ValorPagoCredito
+        //      1.44 - Banco do Brasil - Correção BB - Ficha de Compensação - AGÊNCIA/CÓDIGO DO BENEFICIÁRIO: Informe o prefixo da agência e número da conta de relacionamento com o BB no formato AAAA-Z / CCCCC-Z
+        //             Alteração na Impressão do Boleto Bancário: Comprovante de Entrega - Alterado de "Agência / Código do Cedente" para "Agência / Código do Beneficiário"
 
-        readonly public string Versao = "1.42";
+        readonly public string Versao = "1.44";
 
         private Boletos boletos = new Boletos();
         public int quantidadeBoletos { get { return boletos.Count; } }
@@ -118,7 +122,7 @@ namespace Boleto2Net
                 }
 
                 // Banco, Cedente, Conta Corrente
-                boletos.Banco = Banco.NovaInstancia(numeroBanco);
+                boletos.Banco = Banco.Instancia(numeroBanco);
                 boletos.Banco.Cedente = new Cedente
                 {
                     CPFCNPJ = cnpj,

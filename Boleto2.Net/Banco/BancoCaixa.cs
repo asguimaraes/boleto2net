@@ -9,18 +9,18 @@ using static System.String;
 
 namespace Boleto2Net
 {
-    internal sealed class BancoCaixa : Banco
+    internal sealed class BancoCaixa : IBanco
     {
-        public BancoCaixa()
-        {
-            Codigo = 104;
-            Nome = "Caixa Econômica Federal";
-            Digito = "0";
+        internal static Lazy<IBanco> Instance { get; } = new Lazy<IBanco>(() => new BancoCaixa());
 
+        public Cedente Cedente { get; set; }
+        public int Codigo { get; } = 104;
+        public string Nome { get; } = "Caixa Econômica Federal";
+        public string Digito { get; } = "0";
+        public List<string> IdsRetornoCnab400RegistroDetalhe { get; } = new List<string>();
+        public bool RemoveAcentosArquivoRemessa { get; }
 
-        }
-
-        public override void FormataCedente()
+        public void FormataCedente()
         {
             var contaBancaria = Cedente.ContaBancaria;
             if (!CarteiraFactory<BancoCaixa>.CarteiraEstaImplementada(contaBancaria.CarteiraComVariacaoPadrao))
@@ -37,12 +37,23 @@ namespace Boleto2Net
             contaBancaria.LocalPagamento = "ATÉ O VENCIMENTO EM QUALQUER BANCO. APÓS O VENCIMENTO SOMENTE NA CAIXA ECONÔMICA FEDERAL.";
         }
 
-        internal override ICarteira ObterCarteira(Boleto boleto)
+        public void ValidaBoleto(Boleto boleto)
         {
-            return CarteiraFactory<BancoCaixa>.ObterCarteira(boleto.Carteira);
         }
 
-        public override string GerarHeaderRemessa(TipoArquivo tipoArquivo, int numeroArquivoRemessa, ref int numeroRegistroGeral)
+        public void FormataNossoNumero(Boleto boleto)
+        {
+            var carteira = CarteiraFactory<BancoCaixa>.ObterCarteira(boleto.Carteira);
+            carteira.FormataNossoNumero(boleto);
+        }
+
+        public string FormataCodigoBarraCampoLivre(Boleto boleto)
+        {
+            var carteira = CarteiraFactory<BancoCaixa>.ObterCarteira(boleto.Carteira);
+            return carteira.FormataCodigoBarraCampoLivre(boleto);
+        }
+
+        public string GerarHeaderRemessa(TipoArquivo tipoArquivo, int numeroArquivoRemessa, ref int numeroRegistroGeral)
         {
             try
             {
@@ -63,11 +74,11 @@ namespace Boleto2Net
             }
             catch (Exception ex)
             {
-                throw new Exception("Erro durante a geração do Header do arquivo de REMESSA.", ex);
+                throw Boleto2NetException.ErroAoGerarRegistroHeaderDoArquivoRemessa(ex);
             }
         }
 
-        public override string GerarDetalheRemessa(TipoArquivo tipoArquivo, Boleto boleto, ref int numeroRegistro)
+        public string GerarDetalheRemessa(TipoArquivo tipoArquivo, Boleto boleto, ref int numeroRegistro)
         {
             try
             {
@@ -109,11 +120,11 @@ namespace Boleto2Net
             }
             catch (Exception ex)
             {
-                throw new Exception("Erro durante a geração do Detalhe arquivo de REMESSA.", ex);
+                throw Boleto2NetException.ErroAoGerarRegistroDetalheDoArquivoRemessa(ex);
             }
         }
 
-        public override string GerarTrailerRemessa(TipoArquivo tipoArquivo, int numeroArquivoRemessa,
+        public string GerarTrailerRemessa(TipoArquivo tipoArquivo, int numeroArquivoRemessa,
             ref int numeroRegistroGeral, decimal valorBoletoGeral,
             int numeroRegistroCobrancaSimples, decimal valorCobrancaSimples,
             int numeroRegistroCobrancaVinculada, decimal valorCobrancaVinculada,
@@ -366,8 +377,9 @@ namespace Boleto2Net
                     codMulta = "0";
                 }
 
-                var msg3 = Utils.FitStringLength(boleto.MensagemArquivoRemessa.PadRight(500, ' ').Substring(00, 40), 40, 40, ' ', 0, true, true, false);
-                var msg4 = Utils.FitStringLength(boleto.MensagemArquivoRemessa.PadRight(500, ' ').Substring(40, 40), 40, 40, ' ', 0, true, true, false);
+                var msg = boleto.MensagemArquivoRemessa.PadRight(500, ' ');
+                var msg3 = msg.Substring(00, 40).FitStringLength(40, ' ');
+                var msg4 = msg.Substring(40, 40).FitStringLength(40, ' ');
 
                 if ((codMulta == "0") & IsNullOrWhiteSpace(msg3) & IsNullOrWhiteSpace(msg4))
                     return "";
@@ -409,7 +421,7 @@ namespace Boleto2Net
         {
             try
             {
-                var msg5A9 = Utils.FitStringLength(boleto.MensagemArquivoRemessa.PadRight(500, ' ').Substring(80, 200), 200, 200, ' ', 0, true, true, false);
+                var msg5A9 = boleto.MensagemArquivoRemessa.PadRight(500, ' ').Substring(80, 200).FitStringLength(200, ' ');
                 if (IsNullOrWhiteSpace(msg5A9))
                     return "";
 
@@ -494,7 +506,7 @@ namespace Boleto2Net
 
         #region SIG14 - Retorno
 
-        public override void LerDetalheRetornoCNAB240SegmentoT(ref Boleto boleto, string registro)
+        public void LerDetalheRetornoCNAB240SegmentoT(ref Boleto boleto, string registro)
         {
             try
             {
@@ -549,7 +561,7 @@ namespace Boleto2Net
             }
         }
 
-        public override void LerDetalheRetornoCNAB240SegmentoU(ref Boleto boleto, string registro)
+        public void LerDetalheRetornoCNAB240SegmentoU(ref Boleto boleto, string registro)
         {
             try
             {
@@ -559,7 +571,7 @@ namespace Boleto2Net
                 boleto.ValorAbatimento = Convert.ToDecimal(registro.Substring(47, 15)) / 100;
                 boleto.ValorIOF = Convert.ToDecimal(registro.Substring(62, 15)) / 100;
                 boleto.ValorPago = Convert.ToDecimal(registro.Substring(77, 15)) / 100;
-                boleto.ValorCredito = Convert.ToDecimal(registro.Substring(92, 15)) / 100;
+                boleto.ValorPagoCredito = Convert.ToDecimal(registro.Substring(92, 15)) / 100;
                 boleto.ValorOutrasDespesas = Convert.ToDecimal(registro.Substring(107, 15)) / 100;
                 boleto.ValorOutrosCreditos = Convert.ToDecimal(registro.Substring(122, 15)) / 100;
 
@@ -579,12 +591,22 @@ namespace Boleto2Net
             }
         }
 
-        public override void LerDetalheRetornoCNAB400Segmento1(ref Boleto boleto, string registro)
+        public void LerHeaderRetornoCNAB400(string registro)
         {
             throw new NotImplementedException();
         }
 
-        public override void LerDetalheRetornoCNAB400Segmento7(ref Boleto boleto, string registro)
+        public void LerDetalheRetornoCNAB400Segmento1(ref Boleto boleto, string registro)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void LerDetalheRetornoCNAB400Segmento7(ref Boleto boleto, string registro)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void LerTrailerRetornoCNAB400(string registro)
         {
             throw new NotImplementedException();
         }

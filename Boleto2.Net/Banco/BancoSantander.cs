@@ -8,17 +8,18 @@ using static System.String;
 
 namespace Boleto2Net
 {
-    internal sealed class BancoSantander : Banco
+    internal sealed class BancoSantander : IBanco
     {
-        public BancoSantander()
-        {
-            Codigo = 033;
-            Nome = "Santander";
-            Digito = "7";
-            RemoveAcentosArquivoRemessa = false;
-        }
+        internal static Lazy<IBanco> Instance { get; } = new Lazy<IBanco>(() => new BancoSantander());
 
-        public override void FormataCedente()
+        public Cedente Cedente { get; set; }
+        public int Codigo { get; } = 033;
+        public string Nome { get; } = "Santander";
+        public string Digito { get; } = "7";
+        public List<string> IdsRetornoCnab400RegistroDetalhe { get; } = new List<string> { };
+        public bool RemoveAcentosArquivoRemessa { get; } = false;
+
+        public void FormataCedente()
         {
             var contaBancaria = Cedente.ContaBancaria;
 
@@ -33,12 +34,23 @@ namespace Boleto2Net
             Cedente.CodigoFormatado = $"{contaBancaria.Agencia} / {Cedente.Codigo}";
         }
 
-        internal override ICarteira ObterCarteira(Boleto boleto)
+        public void ValidaBoleto(Boleto boleto)
         {
-            return CarteiraFactory<BancoSantander>.ObterCarteira(boleto.CarteiraComVariacao);
         }
 
-        public override string GerarHeaderRemessa(TipoArquivo tipoArquivo, int numeroArquivoRemessa, ref int numeroRegistroGeral)
+        public void FormataNossoNumero(Boleto boleto)
+        {
+            var carteira = CarteiraFactory<BancoSantander>.ObterCarteira(boleto.CarteiraComVariacao);
+            carteira.FormataNossoNumero(boleto);
+        }
+
+        public string FormataCodigoBarraCampoLivre(Boleto boleto)
+        {
+            var carteira = CarteiraFactory<BancoSantander>.ObterCarteira(boleto.CarteiraComVariacao);
+            return carteira.FormataCodigoBarraCampoLivre(boleto);
+        }
+
+        public string GerarHeaderRemessa(TipoArquivo tipoArquivo, int numeroArquivoRemessa, ref int numeroRegistroGeral)
         {
             try
             {
@@ -59,11 +71,11 @@ namespace Boleto2Net
             }
             catch (Exception ex)
             {
-                throw new Exception("Erro durante a geração do Header do arquivo de REMESSA.", ex);
+                throw Boleto2NetException.ErroAoGerarRegistroHeaderDoArquivoRemessa(ex);
             }
         }
 
-        public override string GerarDetalheRemessa(TipoArquivo tipoArquivo, Boleto boleto, ref int numeroRegistro)
+        public string GerarDetalheRemessa(TipoArquivo tipoArquivo, Boleto boleto, ref int numeroRegistro)
         {
             try
             {
@@ -105,11 +117,11 @@ namespace Boleto2Net
             }
             catch (Exception ex)
             {
-                throw new Exception("Erro durante a geração do Detalhe arquivo de REMESSA.", ex);
+                throw Boleto2NetException.ErroAoGerarRegistroDetalheDoArquivoRemessa(ex);
             }
         }
 
-        public override string GerarTrailerRemessa(TipoArquivo tipoArquivo, int numeroArquivoRemessa,
+        public string GerarTrailerRemessa(TipoArquivo tipoArquivo, int numeroArquivoRemessa,
             ref int numeroRegistroGeral, decimal valorBoletoGeral,
             int numeroRegistroCobrancaSimples, decimal valorCobrancaSimples,
             int numeroRegistroCobrancaVinculada, decimal valorCobrancaVinculada,
@@ -142,7 +154,7 @@ namespace Boleto2Net
             }
         }
 
-        public override void LerDetalheRetornoCNAB240SegmentoT(ref Boleto boleto, string registro)
+        public void LerDetalheRetornoCNAB240SegmentoT(ref Boleto boleto, string registro)
         {
             try
             {
@@ -183,7 +195,7 @@ namespace Boleto2Net
             }
         }
 
-        public override void LerDetalheRetornoCNAB240SegmentoU(ref Boleto boleto, string registro)
+        public void LerDetalheRetornoCNAB240SegmentoU(ref Boleto boleto, string registro)
         {
             try
             {
@@ -193,7 +205,7 @@ namespace Boleto2Net
                 boleto.ValorAbatimento = Convert.ToDecimal(registro.Substring(47, 15)) / 100;
                 boleto.ValorIOF = Convert.ToDecimal(registro.Substring(62, 15)) / 100;
                 boleto.ValorPago = Convert.ToDecimal(registro.Substring(77, 15)) / 100;
-                boleto.ValorCredito = Convert.ToDecimal(registro.Substring(92, 15)) / 100;
+                boleto.ValorPagoCredito = Convert.ToDecimal(registro.Substring(92, 15)) / 100;
                 boleto.ValorOutrasDespesas = Convert.ToDecimal(registro.Substring(107, 15)) / 100;
                 boleto.ValorOutrosCreditos = Convert.ToDecimal(registro.Substring(122, 15)) / 100;
 
@@ -213,12 +225,22 @@ namespace Boleto2Net
             }
         }
 
-        public override void LerDetalheRetornoCNAB400Segmento1(ref Boleto boleto, string registro)
+        public void LerHeaderRetornoCNAB400(string registro)
         {
             throw new NotImplementedException();
         }
 
-        public override void LerDetalheRetornoCNAB400Segmento7(ref Boleto boleto, string registro)
+        public void LerDetalheRetornoCNAB400Segmento1(ref Boleto boleto, string registro)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void LerDetalheRetornoCNAB400Segmento7(ref Boleto boleto, string registro)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void LerTrailerRetornoCNAB400(string registro)
         {
             throw new NotImplementedException();
         }
@@ -307,7 +329,7 @@ namespace Boleto2Net
                 reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0033, 009, 0, boleto.Banco.Cedente.ContaBancaria.Conta, '0');
                 reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0042, 001, 0, boleto.Banco.Cedente.ContaBancaria.DigitoConta, '0');
                 reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0043, 002, 0, Empty, ' ');
-                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0045, 013, 0, boleto.NossoNumero+boleto.NossoNumeroDV, '0');
+                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0045, 013, 0, boleto.NossoNumero + boleto.NossoNumeroDV, '0');
 
                 if (boleto.TipoCarteira == TipoCarteira.CarteiraCobrancaSimples)
                     reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 058, 001, 0, "5", '0');
@@ -446,9 +468,10 @@ namespace Boleto2Net
                     codMulta = "0";
                 }
                 
-                    
-                var msg3 = Utils.FitStringLength(boleto.MensagemArquivoRemessa.PadRight(500, ' ').Substring(00, 40), 40, 40, ' ', 0, true, true, false);
-                var msg4 = Utils.FitStringLength(boleto.MensagemArquivoRemessa.PadRight(500, ' ').Substring(40, 40), 40, 40, ' ', 0, true, true, false);
+                
+                var msg = boleto.MensagemArquivoRemessa.PadRight(500, ' ');
+                var msg3 = msg.Substring(00, 40).FitStringLength(40, ' ');
+                var msg4 = msg.Substring(40, 40).FitStringLength(40, ' ');
                 if ((codMulta == "0") & IsNullOrWhiteSpace(msg3) & IsNullOrWhiteSpace(msg4))
                     return "";
 
@@ -486,7 +509,7 @@ namespace Boleto2Net
         {
             try
             {
-                var msg5A7 = Utils.FitStringLength(boleto.MensagemArquivoRemessa.PadRight(500, ' ').Substring(80, 200), 200, 200, ' ', 0, true, true, false);
+                var msg5A7 = boleto.MensagemArquivoRemessa.PadRight(500, ' ').Substring(80, 200).FitStringLength(200, ' ');
                 if (IsNullOrWhiteSpace(msg5A7))
                     return "";
 
