@@ -66,6 +66,8 @@ namespace Boleto2Net
         public DateTime DataMulta { get; set; }
 
         // Desconto
+        public decimal PercentualDesconto { get; set; }
+
         public DateTime DataDesconto { get; set; }
 
 
@@ -126,6 +128,7 @@ namespace Boleto2Net
                 throw new Exception("Aceite do Boleto deve ser definido com A ou N");
 
             Banco.ValidaBoleto(this);
+            Banco.FormataCedente();
             Banco.FormataNossoNumero(this);
             Boleto2Net.Banco.FormataCodigoBarra(this);
             Boleto2Net.Banco.FormataLinhaDigitavel(this);

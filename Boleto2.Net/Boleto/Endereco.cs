@@ -15,7 +15,7 @@ namespace Boleto2Net
 
         public string FormataLogradouro(int tamanhoFinal)
         {
-            var logradouroCompleto = string.Empty;
+            /*var logradouroCompleto = string.Empty;
             if (LogradouroNumero.Length != 0)
                 logradouroCompleto += " " + LogradouroNumero;
             if (LogradouroComplemento.Length != 0)
@@ -27,7 +27,18 @@ namespace Boleto2Net
             if (LogradouroEndereco.Length + logradouroCompleto.Length <= tamanhoFinal)
                 return LogradouroEndereco + logradouroCompleto;
 
-            return LogradouroEndereco.Substring(0, tamanhoFinal - logradouroCompleto.Length);
+            return LogradouroEndereco.Substring(0, tamanhoFinal - logradouroCompleto.Length);*/
+            string endereco = string.Format("{0} {1} {2}", LogradouroEndereco, LogradouroNumero, LogradouroComplemento);
+
+            if(endereco.Length < tamanhoFinal || tamanhoFinal == 0)
+            {
+                return endereco;
+            }
+            else
+            {
+                return endereco.Substring(0, tamanhoFinal);
+            }
+                        
         }
     }
 }

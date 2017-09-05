@@ -165,12 +165,75 @@ namespace Boleto2Net
 
         public void LerDetalheRetornoCNAB240SegmentoT(ref Boleto boleto, string registro)
         {
-            throw new NotImplementedException();
+            try
+            {
+                //Identificação da ocorrência
+                boleto.CodigoOcorrencia = registro.Substring(15, 2);
+
+                //Conta Bancária
+                boleto.Banco.Cedente = new Cedente();
+                boleto.Banco.Cedente.ContaBancaria = new ContaBancaria();
+                boleto.Banco.Cedente.ContaBancaria.Agencia = registro.Substring(18, 4);
+                boleto.Banco.Cedente.ContaBancaria.DigitoAgencia = registro.Substring(22, 1);
+                boleto.Banco.Cedente.ContaBancaria.Conta = registro.Substring(27, 8);
+                boleto.Banco.Cedente.ContaBancaria.DigitoConta = registro.Substring(35, 1);
+
+                //Identificação da Ocorrência
+                boleto.NossoNumero = registro.Substring(37, 17);
+                boleto.NossoNumeroDV = "";
+                boleto.NossoNumeroFormatado = boleto.NossoNumero;
+
+                //Número do Documento
+                boleto.NumeroDocumento = registro.Substring(58, 10);
+
+                //Data Vencimento do Título
+                boleto.DataVencimento = Utils.ToDateTime(string.Format("{2}-{1}-{0}", registro.Substring(73, 2), registro.Substring(75, 2),
+                    registro.Substring(77, 4)));
+
+                //Valor do título
+                boleto.ValorTitulo = Convert.ToDecimal(registro.Substring(81, 15)) / 100;
+
+                //Nº Controle do Participante
+                boleto.NumeroControleParticipante = registro.Substring(105, 25);
+
+                //Valor tarifas
+                boleto.ValorTarifas = Convert.ToDecimal(registro.Substring(198, 15)) / 100;
+            }
+            catch(Exception ex)
+            {
+                throw new Exception("Erro ao ler segmento T do arquivo de RETORNO / CNAB 240.", ex);
+            }            
         }
 
         public void LerDetalheRetornoCNAB240SegmentoU(ref Boleto boleto, string registro)
         {
-            throw new NotImplementedException();
+            //throw new NotImplementedException();
+            try
+            {
+                //Valor de juros de mora/multa
+                boleto.ValorJurosDia = Convert.ToDecimal(registro.Substring(17, 15)) / 100;
+                //Valor do desconto
+                boleto.ValorDesconto = Convert.ToDecimal(registro.Substring(32, 15)) / 100;
+                //Valor abatimento
+                boleto.ValorAbatimento = Convert.ToDecimal(registro.Substring(47, 15)) / 100;
+                //Valor IOF
+                boleto.ValorIOF = Convert.ToDecimal(registro.Substring(62, 15)) / 100;
+                //Valor lançado em conta corrente
+                boleto.ValorPago = Convert.ToDecimal(registro.Substring(77, 15)) / 100;
+                //Valor creditado
+                boleto.ValorPagoCredito = Convert.ToDecimal(registro.Substring(92, 15)) / 100;
+                //Valor outras despesas
+                boleto.ValorOutrasDespesas = Convert.ToDecimal(registro.Substring(107, 15)) / 100;
+                //Valor outras créditos
+                boleto.ValorOutrosCreditos = Convert.ToDecimal(registro.Substring(122, 15)) / 100;
+
+                //Data do Crédito
+                boleto.DataCredito = Utils.ToDateTime(string.Format("{2}-{1}-{0}", registro.Substring(145, 2), registro.Substring(147, 2), registro.Substring(149, 4)));
+            }
+            catch(Exception ex)
+            {
+                throw new Exception("Erro ao ler segmento U do arquivo de RETORNO / CNAB 240.", ex);
+            } 
         }
 
         private static TipoEspecieDocumento AjustaEspecieCnab400(string codigoEspecie)
@@ -541,19 +604,8 @@ namespace Boleto2Net
             try
             {
                 var codMulta = "0";
-                decimal vlrMulta = 0;
-
                 if (boleto.ValorMulta > 0)
-                {
-                    codMulta = "1";                
-                    vlrMulta = boleto.ValorMulta;
-                }
-                else if(boleto.PercentualMulta > 0)
-                {
-                    codMulta = "2";
-                    vlrMulta = boleto.PercentualMulta;
-                }
-
+                    codMulta = "1";
                 var msg3 = boleto.MensagemArquivoRemessa.PadRight(500, ' ').Substring(00, 40).FitStringLength(40, ' ');
                 if ((codMulta == "0") & string.IsNullOrWhiteSpace(msg3))
                     return "";
@@ -575,7 +627,7 @@ namespace Boleto2Net
                 reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0051, 015, 0, "0", '0');
                 reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0066, 001, 0, codMulta, '0');
                 reg.Adicionar(TTiposDadoEDI.ediDataDDMMAAAA_________, 0067, 008, 0, boleto.DataMulta, '0');
-                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0075, 015, 2, vlrMulta, '0');
+                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0075, 015, 2, boleto.ValorMulta, '0');
                 reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0090, 010, 0, string.Empty, ' ');
                 reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0100, 040, 0, msg3, ' ');
                 reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0140, 040, 0, string.Empty, ' ');
@@ -893,6 +945,14 @@ namespace Boleto2Net
                 boleto.DescricaoOcorrencia = DescricaoOcorrenciaCnab400(boleto.CodigoOcorrencia);
                 boleto.CodigoOcorrenciaAuxiliar = registro.Substring(86, 2);
 
+                //Conta Bancária
+                boleto.Banco.Cedente = new Cedente();
+                boleto.Banco.Cedente.ContaBancaria = new ContaBancaria();
+                boleto.Banco.Cedente.ContaBancaria.Agencia = registro.Substring(17, 4);
+                boleto.Banco.Cedente.ContaBancaria.DigitoAgencia = registro.Substring(21, 1);
+                boleto.Banco.Cedente.ContaBancaria.Conta = registro.Substring(22, 8);
+                boleto.Banco.Cedente.ContaBancaria.DigitoConta = registro.Substring(30, 1);
+
                 //Número do Documento
                 boleto.NumeroDocumento = registro.Substring(116, 10);
                 boleto.EspecieDocumento = AjustaEspecieCnab400(registro.Substring(173, 2));
@@ -904,18 +964,28 @@ namespace Boleto2Net
                 boleto.ValorIOF = Convert.ToDecimal(registro.Substring(214, 13)) / 100;
                 boleto.ValorAbatimento = Convert.ToDecimal(registro.Substring(227, 13)) / 100;
                 boleto.ValorDesconto = Convert.ToDecimal(registro.Substring(240, 13)) / 100;
-                boleto.ValorPago = Convert.ToDecimal(registro.Substring(253, 13)) / 100;
+                //O arquivo contem apenas informação do valor pago
+                boleto.ValorPago = Convert.ToDecimal(registro.Substring(253, 13)) / 100;                
                 boleto.ValorJurosDia = Convert.ToDecimal(registro.Substring(266, 13)) / 100;
                 boleto.ValorOutrosCreditos = Convert.ToDecimal(registro.Substring(279, 13)) / 100;
 
+                var fillerAno = string.Format("{0:yyyy}", DateTime.Now).Substring(0, 2);
+
                 //Data Ocorrência no Banco
-                boleto.DataProcessamento = Utils.ToDateTime(Utils.ToInt32(registro.Substring(110, 6)).ToString("##-##-##"));
+                //boleto.DataProcessamento = Utils.ToDateTime(Utils.ToInt32(registro.Substring(110, 6)).ToString("##-##-##"));
+                boleto.DataProcessamento = Utils.ToDateTime(string.Format("{3}{2}-{1}-{0}", registro.Substring(110, 2), registro.Substring(112, 2), 
+                    registro.Substring(114, 2), fillerAno));
+
 
                 //Data Vencimento do Título
-                boleto.DataVencimento = Utils.ToDateTime(Utils.ToInt32(registro.Substring(146, 6)).ToString("##-##-##"));
+                //boleto.DataVencimento = Utils.ToDateTime(Utils.ToInt32(registro.Substring(146, 6)).ToString("##-##-##"));
+                boleto.DataVencimento = Utils.ToDateTime(string.Format("{3}{2}-{1}-{0}", registro.Substring(146, 2), registro.Substring(148, 2), 
+                    registro.Substring(150, 2), fillerAno));
 
                 // Data do Crédito
-                boleto.DataCredito = Utils.ToDateTime(Utils.ToInt32(registro.Substring(175, 6)).ToString("##-##-##"));
+                //boleto.DataCredito = Utils.ToDateTime(Utils.ToInt32(registro.Substring(175, 6)).ToString("##-##-##"));
+                boleto.DataCredito = Utils.ToDateTime(string.Format("{3}{2}-{1}-{0}", registro.Substring(175, 2), registro.Substring(177, 2), 
+                    registro.Substring(179, 2), fillerAno));
 
                 // Registro Retorno
                 boleto.RegistroArquivoRetorno = boleto.RegistroArquivoRetorno + registro + Environment.NewLine;

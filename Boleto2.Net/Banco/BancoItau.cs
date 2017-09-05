@@ -161,7 +161,9 @@ namespace Boleto2Net
                 boleto.NumeroDocumento = registro.Substring(58, 10);
 
                 //Data Vencimento do Título
-                boleto.DataVencimento = Utils.ToDateTime(Utils.ToInt32(registro.Substring(73, 8)).ToString("####-##-##"));
+                //A função não funciona.
+                //boleto.DataVencimento = Utils.ToDateTime(Utils.ToInt32(registro.Substring(73, 8)).ToString("####-##-##"));
+                boleto.DataVencimento = Utils.ToDateTime(Format("{2}-{1}-{0}", registro.Substring(73, 2), registro.Substring(75, 2), registro.Substring(77, 4)));
 
                 //Valor do título
                 boleto.ValorTitulo = Convert.ToDecimal(registro.Substring(81, 15)) / 100;
@@ -197,9 +199,13 @@ namespace Boleto2Net
                 boleto.ValorIOF = Convert.ToDecimal(registro.Substring(62, 15)) / 100;
                 //Valor lançado em conta corrente
                 boleto.ValorPago = Convert.ToDecimal(registro.Substring(77, 15)) / 100;
+                //Valor creditado
+                boleto.ValorPagoCredito = Convert.ToDecimal(registro.Substring(92, 15)) / 100;
 
                 //Data do Crédito
-                boleto.DataCredito = Utils.ToDateTime(Utils.ToInt32(registro.Substring(145, 8)).ToString("####-##-##"));
+                //A função não funciona. Ex. 12062017
+                //boleto.DataCredito = Utils.ToDateTime(Utils.ToInt32(registro.Substring(145, 8)).ToString("####-##-##"));
+                boleto.DataCredito = Utils.ToDateTime(Format("{2}-{1}-{0}", registro.Substring(145, 2), registro.Substring(147, 2), registro.Substring(149, 4)));
                 
             }
             catch (Exception ex)
@@ -242,6 +248,13 @@ namespace Boleto2Net
                 boleto.DescricaoOcorrencia = DescricaoOcorrenciaCnab400(boleto.CodigoOcorrencia);
                 boleto.CodigoOcorrenciaAuxiliar = registro.Substring(377, 8);
 
+                //Conta Bancária
+                boleto.Banco.Cedente = new Cedente();
+                boleto.Banco.Cedente.ContaBancaria = new ContaBancaria();
+                boleto.Banco.Cedente.ContaBancaria.Agencia = registro.Substring(17, 4);
+                boleto.Banco.Cedente.ContaBancaria.Conta = registro.Substring(23, 5);
+                boleto.Banco.Cedente.ContaBancaria.DigitoConta = registro.Substring(28, 1);
+
                 //Número do Documento
                 boleto.NumeroDocumento = registro.Substring(116, 10);
                 boleto.EspecieDocumento = AjustaEspecieCnab400(registro.Substring(173, 2));
@@ -253,18 +266,27 @@ namespace Boleto2Net
                 boleto.ValorIOF = Convert.ToDecimal(registro.Substring(214, 13)) / 100;
                 boleto.ValorAbatimento = Convert.ToDecimal(registro.Substring(227, 13)) / 100;
                 boleto.ValorDesconto = Convert.ToDecimal(registro.Substring(240, 13)) / 100;
+                //O arquivo contem apenas informação do valor creditado
                 boleto.ValorPagoCredito = Convert.ToDecimal(registro.Substring(253, 13)) / 100;
                 boleto.ValorJurosDia = Convert.ToDecimal(registro.Substring(266, 13)) / 100;
                 boleto.ValorOutrosCreditos = Convert.ToDecimal(registro.Substring(279, 13)) / 100;
 
-                //Data Ocorrência no Banco
-                boleto.DataProcessamento = Utils.ToDateTime(Utils.ToInt32(registro.Substring(110, 6)).ToString("##-##-##"));
+                var fillerAno = Format("{0:yyyy}", DateTime.Now).Substring(0,2);
 
+                //Data Ocorrência no Banco
+                //boleto.DataProcessamento = Utils.ToDateTime(Utils.ToInt32(registro.Substring(110, 6)).ToString("##-##-##"));
+                boleto.DataProcessamento = Utils.ToDateTime(Format("{3}{2}-{1}-{0}", registro.Substring(110, 2), registro.Substring(112, 2), registro.Substring(114, 2), 
+                    fillerAno));
+                
                 //Data Vencimento do Título
-                boleto.DataVencimento = Utils.ToDateTime(Utils.ToInt32(registro.Substring(146, 6)).ToString("##-##-##"));
+                //boleto.DataVencimento = Utils.ToDateTime(Utils.ToInt32(registro.Substring(146, 6)).ToString("##-##-##"));
+                boleto.DataVencimento = Utils.ToDateTime(Format("{3}{2}-{1}-{0}", registro.Substring(146, 2), registro.Substring(148, 2), registro.Substring(150, 2),
+                    fillerAno));
 
                 // Data do Crédito
-                boleto.DataCredito = Utils.ToDateTime(Utils.ToInt32(registro.Substring(295, 6)).ToString("##-##-##"));
+                //boleto.DataCredito = Utils.ToDateTime(Utils.ToInt32(registro.Substring(295, 6)).ToString("##-##-##"));
+                boleto.DataCredito = Utils.ToDateTime(Format("{3}{2}-{1}-{0}", registro.Substring(295, 2), registro.Substring(297, 2), registro.Substring(299, 2),
+                    fillerAno));
 
                 // Registro Retorno
                 boleto.RegistroArquivoRetorno = boleto.RegistroArquivoRetorno + registro + Environment.NewLine;

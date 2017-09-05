@@ -184,7 +184,8 @@ namespace Boleto2Net
                 boleto.ValorTitulo = Convert.ToDecimal(registro.Substring(81, 15)) / 100;
 
                 //Data Vencimento do Título
-                boleto.DataVencimento = Utils.ToDateTime(Utils.ToInt32(registro.Substring(73, 8)).ToString("##-##-####"));
+                //boleto.DataVencimento = Utils.ToDateTime(Utils.ToInt32(registro.Substring(73, 8)).ToString("##-##-####"));
+                boleto.DataVencimento = Utils.ToDateTime(Format("{2}-{1}-{0}", registro.Substring(73, 2), registro.Substring(75, 2), registro.Substring(77, 4)));
 
                 // Registro Retorno
                 boleto.RegistroArquivoRetorno = boleto.RegistroArquivoRetorno + registro + Environment.NewLine;
@@ -199,6 +200,10 @@ namespace Boleto2Net
         {
             try
             {
+                /*
+                 *  O arquivo de retorno contem informações de valor pago e valor creditado                  
+                 */
+
                 //Valor do Título
                 boleto.ValorJurosDia = Convert.ToDecimal(registro.Substring(17, 15)) / 100;
                 boleto.ValorDesconto = Convert.ToDecimal(registro.Substring(32, 15)) / 100;
@@ -211,10 +216,12 @@ namespace Boleto2Net
 
 
                 //Data Ocorrência no Banco
-                boleto.DataProcessamento = Utils.ToDateTime(Utils.ToInt32(registro.Substring(137, 8)).ToString("##-##-####"));
+                //boleto.DataProcessamento = Utils.ToDateTime(Utils.ToInt32(registro.Substring(137, 8)).ToString("##-##-####"));
+                boleto.DataProcessamento = Utils.ToDateTime(Format("{2}-{1}-{0}", registro.Substring(137, 2), registro.Substring(139, 2), registro.Substring(141, 4)));
 
                 // Data do Crédito
-                boleto.DataCredito = Utils.ToDateTime(Utils.ToInt32(registro.Substring(145, 8)).ToString("##-##-####"));
+                //boleto.DataCredito = Utils.ToDateTime(Utils.ToInt32(registro.Substring(145, 8)).ToString("##-##-####"));
+                boleto.DataCredito = Utils.ToDateTime(Format("{2}-{1}-{0}", registro.Substring(145, 2), registro.Substring(147, 2), registro.Substring(149, 4)));
 
                 // Registro Retorno
                 boleto.RegistroArquivoRetorno = boleto.RegistroArquivoRetorno + registro + Environment.NewLine;
@@ -452,23 +459,10 @@ namespace Boleto2Net
             try
             {
                 string codMulta;
-                decimal vlrMulta = 0;
                 if (boleto.ValorMulta > 0)
-                {
                     codMulta = "1";
-                    vlrMulta = boleto.ValorMulta;
-                }
-                else if (boleto.PercentualMulta > 0)
-                {
-                    codMulta = "2";
-                    vlrMulta = boleto.PercentualMulta;
-                }
                 else
-                {
                     codMulta = "0";
-                }
-                
-                
                 var msg = boleto.MensagemArquivoRemessa.PadRight(500, ' ');
                 var msg3 = msg.Substring(00, 40).FitStringLength(40, ' ');
                 var msg4 = msg.Substring(40, 40).FitStringLength(40, ' ');
@@ -490,7 +484,7 @@ namespace Boleto2Net
                 reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0042, 024, 0, Empty, ' ');
                 reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0066, 001, 0, codMulta, '0');
                 reg.Adicionar(TTiposDadoEDI.ediDataDDMMAAAA_________, 0067, 008, 0, boleto.DataMulta, '0');
-                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0075, 015, 2, vlrMulta, '0');
+                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0075, 015, 2, boleto.ValorMulta, '0');
                 reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0090, 010, 0, Empty, ' ');
                 reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0100, 040, 0, msg3, ' ');
                 reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0140, 040, 0, msg4, ' ');
