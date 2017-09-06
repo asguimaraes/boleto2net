@@ -161,6 +161,14 @@ namespace Boleto2Net
                 //Nº Controle do Participante
                 boleto.NumeroControleParticipante = registro.Substring(100, 25);
 
+                //Conta Bancária
+                boleto.Banco.Cedente = new Cedente();
+                boleto.Banco.Cedente.ContaBancaria = new ContaBancaria();
+                boleto.Banco.Cedente.ContaBancaria.Agencia = registro.Substring(17, 4);
+                boleto.Banco.Cedente.ContaBancaria.DigitoAgencia = registro.Substring(21, 1);
+                boleto.Banco.Cedente.ContaBancaria.Conta = registro.Substring(22, 9);
+                boleto.Banco.Cedente.ContaBancaria.DigitoConta = registro.Substring(31, 1);
+
                 //Carteira
                 boleto.Carteira = registro.Substring(53, 1);
                 switch (boleto.Carteira)

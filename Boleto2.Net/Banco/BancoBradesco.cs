@@ -154,6 +154,13 @@ namespace Boleto2Net
                 //Nº Controle do Participante
                 boleto.NumeroControleParticipante = registro.Substring(37, 25);
 
+                boleto.Banco.Cedente = new Cedente();
+                boleto.Banco.Cedente.ContaBancaria = new ContaBancaria();
+                boleto.Banco.Cedente.ContaBancaria.Agencia = registro.Substring(24, 5);
+                boleto.Banco.Cedente.ContaBancaria.DigitoAgencia = "";
+                boleto.Banco.Cedente.ContaBancaria.Conta = registro.Substring(29, 7);
+                boleto.Banco.Cedente.ContaBancaria.DigitoConta = registro.Substring(36, 1);
+
                 //Carteira (no arquivo retorno, vem com 1 caracter. Ajustamos para 2 caracteres, como no manual do Bradesco.
                 boleto.Carteira = registro.Substring(107, 1).PadLeft(2, '0');
                 boleto.TipoCarteira = TipoCarteira.CarteiraCobrancaSimples;
