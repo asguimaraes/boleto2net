@@ -17,7 +17,7 @@ namespace Boleto2Net
         public string Nome { get; } = "Santander";
         public string Digito { get; } = "7";
         public List<string> IdsRetornoCnab400RegistroDetalhe { get; } = new List<string> { };
-        public bool RemoveAcentosArquivoRemessa { get; } = false;
+        public bool RemoveAcentosArquivoRemessa { get; } = true;
 
         public void FormataCedente()
         {
@@ -26,7 +26,7 @@ namespace Boleto2Net
             if (!CarteiraFactory<BancoSantander>.CarteiraEstaImplementada(contaBancaria.CarteiraComVariacaoPadrao))
                 throw Boleto2NetException.CarteiraNaoImplementada(contaBancaria.CarteiraComVariacaoPadrao);
 
-            contaBancaria.FormatarDados("ATÉ O VENCIMENTO EM QUALQUER BANCO. APÓS O VENCIMENTO SOMENTE NO SANTANDER.", digitosConta: 9);
+            contaBancaria.FormatarDados("ATÉ O VENCIMENTO EM QUALQUER BANCO. APÓS O VENCIMENTO SOMENTE NO SANTANDER.", "", digitosConta: 9);
 
             var codigoCedente = Cedente.Codigo;
             Cedente.Codigo = codigoCedente.Length <= 7 ? codigoCedente.PadLeft(7, '0') : throw Boleto2NetException.CodigoCedenteInvalido(codigoCedente, 7);
@@ -205,6 +205,24 @@ namespace Boleto2Net
                 //Data Vencimento do Título
                 //boleto.DataVencimento = Utils.ToDateTime(Utils.ToInt32(registro.Substring(73, 8)).ToString("##-##-####"));
                 boleto.DataVencimento = Utils.ToDateTime(Format("{2}-{1}-{0}", registro.Substring(69, 2), registro.Substring(71, 2), registro.Substring(73, 4)));
+
+                //093 – 095 Nº do Banco Cobrador / Recebedor N 003 - LAYOUT V 2.8 Fevereiro/2017 Pág 9
+                boleto.BancoCobradorRecebedor = registro.Substring(92, 3);
+
+                //096 – 099 Agência Cobradora / Recebedora N 004 - LAYOUT V 2.8 Fevereiro/2017 Pág 9
+                //100 – 100 Dígito da Agência do Beneficiário N 001 - LAYOUT V 2.8 Fevereiro/2017 Pág 9
+                boleto.AgenciaCobradoraRecebedora = registro.Substring(95, 5);
+
+                //129 – 143 Número de inscrição Pagador N 015 30 - LAYOUT V 2.8 Fevereiro/2017 Pág 9
+                //aqui, apesar de haver 15 caracteres no layout, pegamos apenas os últimos 14(o necessário) pois há uma validação no momento da atribuição(set) do CPFCNPJ
+                boleto.Sacado = new Sacado();
+                boleto.Sacado.CPFCNPJ = registro.Substring(129, 14);
+                
+                //144 - 183 Nome do Pagador A 040 - LAYOUT V 2.8 Fevereiro/2017 Pág 9
+                boleto.Sacado.Nome = registro.Substring(143, 40);
+
+                //194 – 208 Valor da Tarifa / Custas N 015 2 - LAYOUT V 2.8 Fevereiro/2017 Pág 9
+                boleto.ValorTarifas = Convert.ToDecimal(registro.Substring(193, 15)) / 100;
 
                 // Registro Retorno
                 boleto.RegistroArquivoRetorno = boleto.RegistroArquivoRetorno + registro + Environment.NewLine;
